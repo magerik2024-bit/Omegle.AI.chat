@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Omegle: Talk to Strangers!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
+
+        :root {
+            --omegle-light-blue: #00a2ff;
+            --omegle-dark-blue: #0084d1;
+            --stranger-red: #ff0000;
+            --you-blue: #0000ff;
+        }
+
+        body, html {
+            font-family: 'Open+Sans', sans-serif;
+            background-color: #fff;
+            color: #333;
+            height: 100%;
+            overflow: hidden; 
+            margin: 0;
+            padding: 0;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Header Styles --- */
+        .omegle-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+
+        .omegle-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--omegle-light-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .omega-svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .brand-text {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #333;
+            letter-spacing: -1.5px;
+        }
+
+        .slogan-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #555;
+            margin-left: 5px;
+            border-left: 2px solid #ddd;
+            padding-left: 12px;
+            line-height: 1;
+        }
+
+        /* --- Button Outline Theme --- */
+        .btn-themed {
+            background: white;
+            border: 2px solid var(--omegle-light-blue);
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+        .btn-themed:active {
+            transform: translateY(1px);
+            background: #f0f9ff;
+        }
+
+        /* Skip Button */
+        .btn-skip {
+            min-width: 95px;
+            padding: 8px 12px;
+        }
+        .esc-label {
+            display: block;
+            color: var(--omegle-light-blue);
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+        .stop-label {
+            display: block;
+            color: black;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        /* Send Button - Updated per request */
+        .btn-send {
+            min-width: 95px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .enter-label { 
+            font-size: 10px; 
+            font-weight: 800; 
+            color: var(--omegle-light-blue); /* Enter stays blue */
+        }
+        .send-label { 
+            font-size: 15px; 
+            font-weight: 800; 
+            color: black; /* Send is now black */
+        }
+
+        .btn-report-top {
+            padding: 6px 14px;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--omegle-light-blue);
+        }
+
+        /* --- Chat Layout --- */
+        .video-column {
+            width: 45%;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #fff;
+        }
+
+        .chat-column {
+            width: 55%;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #ccc;
+            background: #fff;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .video-box {
+            background-color: #1a1a1a;
+            position: relative;
+            border: 1px solid #ddd;
+            aspect-ratio: 4 / 3;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .status-msg { color: #777; font-style: italic; font-size: 0.8rem; margin: 8px 0; }
+        .stranger-msg { color: var(--stranger-red); font-weight: 700; }
+        .you-msg { color: var(--you-blue); font-weight: 700; }
+        .disconnected-msg { color: #555; font-weight: 800; margin: 15px 0; border-top: 1px solid #eee; padding-top: 10px; }
+
+        #typing-indicator {
+            display: none;
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* Modal Layout */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 420px;
+            border: 2px solid var(--omegle-light-blue);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; overflow-y: auto; }
+            .video-column { width: 100%; height: auto; order: 1; }
+            .chat-column { width: 100%; height: 500px; order: 2; }
+            .slogan-text { display: none; }
+            .report-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="report-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 class="text-xl font-bold mb-1 text-[#00a2ff]">Report Stranger</h2>
+        <p class="text-xs text-gray-500 mb-4">Please select the most accurate reason for this report.</p>
+        
+        <div class="report-grid">
+            <button onclick="submitReport('Nudity/Sexual')" class="btn-themed p-2 text-left text-xs text-gray-700">Nudity or Sexual Content</button>
+            <button onclick="submitReport('Harassment')" class="btn-themed p-2 text-left text-xs text-gray-700">Harassment or Bullying</button>
+            <button onclick="submitReport('Hate Speech')" class="btn-themed p-2 text-left text-xs text-gray-700">Hate Speech/Symbols</button>
+            <button onclick="submitReport('Spam/Bot')" class="btn-themed p-2 text-left text-xs text-gray-700">Spam or Bot behavior</button>
+            <button onclick="submitReport('Violence')" class="btn-themed p-2 text-left text-xs text-gray-700">Violence or Threats</button>
+            <button onclick="submitReport('Child Safety')" class="btn-themed p-2 text-left text-xs text-gray-700">Child Safety concerns</button>
+            <button onclick="submitReport('Drug Use')" class="btn-themed p-2 text-left text-xs text-gray-700">Illegal acts or Drugs</button>
+            <button onclick="submitReport('Scam')" class="btn-themed p-2 text-left text-xs text-gray-700">Scam or Fraud</button>
+            <button onclick="submitReport('Underage')" class="btn-themed p-2 text-left text-xs text-gray-700">User is Underage</button>
+            <button onclick="submitReport('Other')" class="btn-themed p-2 text-left text-xs text-gray-700">Something else</button>
+        </div>
+        
+        <button onclick="closeModal()" class="mt-6 w-full py-2 text-gray-400 text-sm font-bold border-t">Cancel</button>
+    </div>
+</div>
+
+<div class="app-container">
+    <header class="p-3 border-b flex justify-between items-center bg-white shadow-sm">
+        <div class="omegle-logo-container">
+            <div class="omegle-icon">
+                <svg class="omega-svg" viewBox="0 0 24 24">
+                    <path d="M18.5,19H21V21H15V19H17.43C16.5,17.22 14.8,15.76 12.8,15.25V13.15C15.76,12.63 18,10.08 18,7A6,6 0 0,0 12,1A6,6 0 0,0 6,7C6,10.08 8.24,12.63 11.2,13.15V15.25C9.2,15.76 7.5,17.22 6.57,19H9V21H3V19H5.5C7,16 10,14 10,14C7,13.5 5,11 5,8A7,7 0 0,1 12,1A7,7 0 0,1 19,8C19,11 17,13.5 14,14C14,14 17,16 18.5,19Z" />
+                </svg>
+            </div>
+            <span class="brand-text">Omegle</span>
+            <span class="slogan-text">Talk to strangers!</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <p class="text-[12px] font-bold text-[#00a2ff]">121,809 online</p>
+            <button onclick="openModal()" class="btn-themed btn-report-top">Report</button>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="video-column">
+            <div id="stranger-box" class="video-box">
+                <div id="loading" class="absolute inset-0 bg-black/90 flex items-center justify-center z-10" style="display: none;">
+                    <div class="w-10 h-10 border-4 border-[#00a2ff]/20 border-t-[#00a2ff] rounded-full animate-spin"></div>
+                </div>
+                <div class="absolute top-2 left-2 bg-black/70 text-white px-2 py-0.5 text-[10px] font-bold uppercase rounded">Stranger</div>
+                <svg class="w-24 h-24 opacity-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div id="my-box" class="video-box">
+                <div class="absolute top-2 left-2 bg-black/70 text-white px-2 py-0.5 text-[10px] font-bold uppercase rounded">You</div>
+                <svg class="w-16 h-16 opacity-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+        </div>
+
+        <div class="chat-column">
+            <div id="chat-messages" class="chat-messages">
+                <div id="message-list"></div>
+                <div id="typing-indicator">Stranger is typing...</div>
+            </div>
+
+            <div class="p-3 border-t bg-[#f9f9f9] flex gap-2">
+                <button id="skip-btn" onclick="handleSkip()" class="btn-themed btn-skip">
+                    <span id="esc-ui-label" class="esc-label">ESC</span>
+                    <span id="skip-text" class="stop-label">STOP</span>
+                </button>
+                <textarea id="chat-input" class="flex-1 p-3 border border-gray-300 rounded resize-none text-sm h-16 outline-none focus:border-[#00a2ff]" placeholder="Type your message..."></textarea>
+                <button id="send-btn" onclick="handleSend()" class="btn-themed btn-send">
+                    <span class="enter-label">ENTER</span>
+                    <span class="send-label">SEND</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiKey = ""; 
+    const messageList = document.getElementById('message-list');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const loading = document.getElementById('loading');
+    const skipText = document.getElementById('skip-text');
+    const escLabel = document.getElementById('esc-ui-label');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const reportModal = document.getElementById('report-modal');
+
+    const personalities = [
+        "RUDE: Impatient and mean. Persona: 'ugh', 'boring', 'next'.",
+        "HORNY_BOT: A fake bot trying to get you to a link. Skips after a few messages.",
+        "WHOLESOME: Very nice, stays for long chats.",
+        "WEIRD: Creepy and random. Mentions strange smells or basement living.",
+        "BORED: One word replies like 'k' or 'lol'. Skips very quickly.",
+        "ELITIST: Snobby. 'I only talk to people with high IQs.'"
+    ];
+
+    let currentPersonality = "";
+    let chatHistory = [];
+    let isConnected = false;
+
+    async function fetchStrangerReply(userMessage) {
+        if (!isConnected) return;
+        typingIndicator.style.display = "block";
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const systemPrompt = `You are a stranger on Omegle. YOUR PERSONALITY: ${currentPersonality}. 
+        You have the power to DISCONNECT. If you want to skip, start message with [SKIP]. 
+        Otherwise, reply in short, lowercase internet slang.`;
+
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    contents: chatHistory.slice(-10), 
+                    systemInstruction: { parts: [{ text: systemPrompt }] } 
+                })
+            });
+            
+            const result = await response.json();
+            let replyText = result.candidates?.[0]?.content?.parts?.[0]?.text || "k";
+            
+            setTimeout(() => {
+                typingIndicator.style.display = "none";
+                
+                if (replyText.includes("[SKIP]")) {
+                    const finalMsg = replyText.replace("[SKIP]", "").trim();
+                    if (finalMsg) appendMsg("Stranger", finalMsg, "stranger-msg");
+                    strangerDisconnect();
+                } else {
+                    chatHistory.push({ role: "model", parts: [{ text: replyText }] });
+                    appendMsg("Stranger", replyText, "stranger-msg");
+                }
+            }, 800 + Math.random() * 1500);
+
+        } catch (error) {
+            typingIndicator.style.display = "none";
+        }
+    }
+
+    function strangerDisconnect() {
+        isConnected = false;
+        const div = document.createElement('div');
+        div.className = "disconnected-msg";
+        div.innerText = "Stranger has disconnected.";
+        messageList.appendChild(div);
+        
+        skipText.innerText = "NEW";
+        escLabel.innerText = "ESC";
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function handleSend() {
+        const val = chatInput.value.trim();
+        if(!val || !isConnected) return;
+        appendMsg("You", val, "you-msg");
+        chatInput.value = "";
+        fetchStrangerReply(val);
+    }
+
+    function appendMsg(sender, text, cls) {
+        const div = document.createElement('div');
+        div.className = "mb-2 text-sm";
+        div.innerHTML = `<span class="${cls}">${sender}:</span> ${text}`;
+        messageList.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function handleSkip() {
+        if (!isConnected) {
+            resetChat();
+            return;
+        }
+
+        if (skipText.innerText === "STOP") {
+            skipText.innerText = "REALLY?";
+        } else {
+            resetChat();
+        }
+    }
+
+    function resetChat() {
+        isConnected = false;
+        messageList.innerHTML = "";
+        chatHistory = [];
+        currentPersonality = personalities[Math.floor(Math.random() * personalities.length)];
+        
+        skipText.innerText = "STOP";
+        escLabel.innerText = "ESC";
+        loading.style.display = "flex";
+        
+        const status = document.createElement('p');
+        status.className = "status-msg";
+        status.innerText = "Connecting to server...";
+        messageList.appendChild(status);
+
+        setTimeout(() => {
+            loading.style.display = "none";
+            isConnected = true;
+            status.innerText = "You're now chatting with a random stranger. Say hi!";
+        }, 1200);
+    }
+
+    function openModal() { reportModal.style.display = "flex"; }
+    function closeModal() { reportModal.style.display = "none"; }
+    function submitReport(r) {
+        alert("Thank you. We have received your report for: " + r + ". Searching for a new stranger...");
+        closeModal();
+        resetChat();
+    }
+
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+        if (e.key === 'Escape') handleSkip();
+    });
+
+    window.onload = resetChat;
+</script>
+
+</body>
+</html>
+
